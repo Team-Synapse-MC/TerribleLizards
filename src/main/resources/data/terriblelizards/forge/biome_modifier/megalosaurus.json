@@ -1,0 +1,11 @@
+{
+  "type": "forge:add_spawns",
+  "biomes": "minecraft:beach",
+  "spawners": {
+    "type": "terriblelizards:megalosaurus",
+    "category": "creature",
+    "weight": 20,
+    "minCount": 1,
+    "maxCount": 1
+  }
+}
