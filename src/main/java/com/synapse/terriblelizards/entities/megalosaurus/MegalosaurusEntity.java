@@ -1,7 +1,6 @@
 package com.synapse.terriblelizards.entities.megalosaurus;
 
 import com.synapse.terriblelizards.entities.goals.AnimatedCooldownMeleeAttackGoal;
-import com.synapse.terriblelizards.entities.megalosaurus.goals.MegalosaurusHuntGoal;
 import com.synapse.terriblelizards.entities.megalosaurus.goals.MegalosaurusSleepGoal;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
