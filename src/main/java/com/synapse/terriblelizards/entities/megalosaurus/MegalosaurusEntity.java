@@ -44,7 +44,7 @@ public class MegalosaurusEntity extends Animal implements GeoEntity {
                 .add(Attributes.ATTACK_SPEED, .5)
                 .add(Attributes.ATTACK_KNOCKBACK, 1.5F)
                 .add(Attributes.KNOCKBACK_RESISTANCE, 0.2f)
-                .add(Attributes.FOLLOW_RANGE, 64.0)
+                .add(Attributes.FOLLOW_RANGE, 20.0)
                 .add(Attributes.MOVEMENT_SPEED, .17f).build();
     }
 
@@ -97,6 +97,17 @@ public class MegalosaurusEntity extends Animal implements GeoEntity {
     private boolean isAttackable(LivingEntity target) {
         if (!this.isAsleep()) return true;
         return this.distanceTo(target) < 4;
+    }
+
+    @Override
+    protected void customServerAiStep() {
+        super.customServerAiStep();
+
+        if (this.getTarget() != null) {
+            if (this.distanceTo(this.getTarget()) > this.getAttributeValue(Attributes.FOLLOW_RANGE)) {
+                this.setTarget(null);
+            }
+        }
     }
 
     @Override
