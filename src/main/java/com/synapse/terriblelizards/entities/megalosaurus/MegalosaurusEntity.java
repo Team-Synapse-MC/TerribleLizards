@@ -1,5 +1,6 @@
 package com.synapse.terriblelizards.entities.megalosaurus;
 
+import com.synapse.terriblelizards.entities.SlowTurnMoveControl;
 import com.synapse.terriblelizards.entities.goals.AnimatedCooldownMeleeAttackGoal;
 import com.synapse.terriblelizards.entities.megalosaurus.goals.MegalosaurusSleepGoal;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -35,6 +36,7 @@ public class MegalosaurusEntity extends Animal implements GeoEntity {
 
     public MegalosaurusEntity(EntityType<? extends Animal> pEntityType, Level pLevel) {
         super(pEntityType, pLevel);
+        this.moveControl = new SlowTurnMoveControl(this, 10f);
     }
 
     public static AttributeSupplier setAttributes() {
