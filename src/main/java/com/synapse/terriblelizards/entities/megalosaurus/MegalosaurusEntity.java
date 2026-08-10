@@ -8,6 +8,7 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.*;
@@ -59,7 +60,7 @@ public class MegalosaurusEntity extends Animal implements GeoEntity {
         this.goalSelector.addGoal(8, new RandomLookAroundGoal(this));
 
         this.targetSelector.addGoal(1, new HurtByTargetGoal(this));
-        this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, true));
+        this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, true, this::isAttackable));
     }
 
     @Override
@@ -91,6 +92,11 @@ public class MegalosaurusEntity extends Animal implements GeoEntity {
             return PlayState.CONTINUE;
         }
         return PlayState.STOP;
+    }
+
+    private boolean isAttackable(LivingEntity target) {
+        if (!this.isAsleep()) return true;
+        return this.distanceTo(target) < 4;
     }
 
     @Override
