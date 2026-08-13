@@ -1,5 +1,6 @@
 package com.synapse.terriblelizards.entities.megalosaurus;
 
+import com.synapse.terriblelizards.TerribleLizards;
 import com.synapse.terriblelizards.entities.SlowTurnMoveControl;
 import com.synapse.terriblelizards.entities.goals.AnimatedCooldownMeleeAttackGoal;
 import com.synapse.terriblelizards.entities.megalosaurus.goals.MegalosaurusSleepGoal;
@@ -98,7 +99,7 @@ public class MegalosaurusEntity extends Animal implements GeoEntity {
 
     private boolean isAttackable(LivingEntity target) {
         if (!this.isAsleep()) return true;
-        return this.distanceTo(target) < 4;
+        return this.distanceTo(target) < 10 && !target.isCrouching() && this.isMoving(target);
     }
 
     @Override
@@ -134,5 +135,14 @@ public class MegalosaurusEntity extends Animal implements GeoEntity {
 
     public void setAsleep(boolean asleep) {
         this.entityData.set(DATA_ASLEEP, asleep);
+    }
+
+    private boolean isMoving(LivingEntity livingEntity) {
+        double dx = livingEntity.getX() - livingEntity.xOld;
+        double dz = livingEntity.getZ() - livingEntity.zOld;
+        double horizontalSpeedSqr = dx * dx + dz * dz;
+        TerribleLizards.LOGGER.debug(String.valueOf(horizontalSpeedSqr));
+
+        return Math.abs(horizontalSpeedSqr) > 0.0001 && livingEntity.onGround();
     }
 }
