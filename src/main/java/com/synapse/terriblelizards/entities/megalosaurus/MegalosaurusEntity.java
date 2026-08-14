@@ -70,6 +70,7 @@ public class MegalosaurusEntity extends Animal implements GeoEntity {
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(new AnimationController<>(this, "controller", 5, this::predicate));
         controllers.add(new AnimationController<>(this, "sleep", 5, this::sleepPredicate)
+                .transitionLength(0)
                 .triggerableAnim("stop", RawAnimation.begin().then("sit_end", Animation.LoopType.PLAY_ONCE)));
         controllers.add(new AnimationController<>(this, "attack", 5, (state) -> PlayState.STOP)
                 .triggerableAnim("bite", RawAnimation.begin().then("bite_set", Animation.LoopType.PLAY_ONCE)));
@@ -91,7 +92,11 @@ public class MegalosaurusEntity extends Animal implements GeoEntity {
 
     private <T extends GeoAnimatable> PlayState sleepPredicate(AnimationState<T> state) {
         if (this.isAsleep()) {
-            state.getController().setAnimation(RawAnimation.begin().then("sit_start", Animation.LoopType.HOLD_ON_LAST_FRAME));
+            state.getController().setAnimation(
+                    RawAnimation.begin()
+                            .then("sit_start", Animation.LoopType.PLAY_ONCE)
+                            .then("sit_loop", Animation.LoopType.LOOP)
+            );
             return PlayState.CONTINUE;
         }
         return PlayState.STOP;

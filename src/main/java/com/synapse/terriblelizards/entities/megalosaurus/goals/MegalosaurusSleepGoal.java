@@ -9,7 +9,7 @@ public class MegalosaurusSleepGoal extends Goal {
 
     private final MegalosaurusEntity megalosaurusEntity;
 
-    private static final int WAKE_ANIM_TIME = 20; // 10 tps
+    private static final int WAKE_ANIM_TIME = 22; // 10 tps
     private int wakeUpTimer = 0;
 
     private boolean sleeping = false;
