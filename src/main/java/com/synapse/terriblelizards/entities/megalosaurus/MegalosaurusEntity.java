@@ -1,5 +1,6 @@
 package com.synapse.terriblelizards.entities.megalosaurus;
 
+import com.synapse.terriblelizards.TerribleLizards;
 import com.synapse.terriblelizards.entities.SlowTurnMoveControl;
 import com.synapse.terriblelizards.entities.goals.AnimatedCooldownMeleeAttackGoal;
 import com.synapse.terriblelizards.entities.megalosaurus.goals.MegalosaurusSleepGoal;
@@ -18,6 +19,7 @@ import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoEntity;
@@ -27,12 +29,19 @@ import software.bernie.geckolib.core.animatable.instance.SingletonAnimatableInst
 import software.bernie.geckolib.core.animation.*;
 import software.bernie.geckolib.core.object.PlayState;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 public class MegalosaurusEntity extends Animal implements GeoEntity {
 
     private static final EntityDataAccessor<Boolean> DATA_ASLEEP =
             SynchedEntityData.defineId(MegalosaurusEntity.class, EntityDataSerializers.BOOLEAN);
 
     private final AnimatableInstanceCache cache = new SingletonAnimatableInstanceCache(this);
+
+    // track potential target positions while sleeping (to see if they move)
+    private final Map<UUID, Vec3> lastPositions = new HashMap<>();
 
     public MegalosaurusEntity(EntityType<? extends Animal> pEntityType, Level pLevel) {
         super(pEntityType, pLevel);
@@ -62,7 +71,7 @@ public class MegalosaurusEntity extends Animal implements GeoEntity {
         this.goalSelector.addGoal(8, new RandomLookAroundGoal(this));
 
         this.targetSelector.addGoal(1, new HurtByTargetGoal(this));
-        this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, true, this::isAttackable));
+        this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, false, this::isAttackable));
     }
 
     @Override
@@ -102,8 +111,16 @@ public class MegalosaurusEntity extends Animal implements GeoEntity {
     }
 
     private boolean isAttackable(LivingEntity target) {
+        if (!this.canAttack(target)) {
+            this.lastPositions.remove(target.getUUID());
+            return false;
+        }
         if (!this.isAsleep()) return true;
-        return this.distanceTo(target) < 10 && !target.isCrouching() && this.isMoving(target);
+        if (this.distanceTo(target) < 10 && this.isMoving(target) && !target.isCrouching()) {
+            this.setTarget(target);
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -142,10 +159,21 @@ public class MegalosaurusEntity extends Animal implements GeoEntity {
     }
 
     private boolean isMoving(LivingEntity livingEntity) {
-        double dx = livingEntity.getX() - livingEntity.xOld;
-        double dz = livingEntity.getZ() - livingEntity.zOld;
-        double horizontalSpeedSqr = dx * dx + dz * dz;
+        UUID id = livingEntity.getUUID();
+        Vec3 currentPos = livingEntity.position();
+        Vec3 lastPos = lastPositions.get(id);
 
-        return Math.abs(horizontalSpeedSqr) > 0.0001 && livingEntity.onGround();
+        lastPositions.put(id, currentPos);
+
+        if (lastPos == null) {
+            return false;
+        }
+
+        double dx = currentPos.x - lastPos.x;
+        double dz = currentPos.z - lastPos.z;
+        TerribleLizards.LOGGER.debug("Horizontal movement: {}, {}", dx, dz);
+        double horizontalDistSqr = dx * dx + dz * dz;
+
+        return horizontalDistSqr > 0.0001 && livingEntity.onGround();
     }
 }
