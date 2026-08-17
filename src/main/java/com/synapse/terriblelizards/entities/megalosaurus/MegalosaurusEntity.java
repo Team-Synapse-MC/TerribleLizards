@@ -1,5 +1,6 @@
 package com.synapse.terriblelizards.entities.megalosaurus;
 
+import com.google.common.base.Predicates;
 import com.synapse.terriblelizards.TerribleLizards;
 import com.synapse.terriblelizards.entities.SlowTurnMoveControl;
 import com.synapse.terriblelizards.entities.goals.AnimatedCooldownMeleeAttackGoal;
@@ -9,6 +10,7 @@ import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.AgeableMob;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
@@ -43,9 +45,15 @@ public class MegalosaurusEntity extends Animal implements GeoEntity {
     // track potential target positions while sleeping (to see if they move)
     private final Map<UUID, Vec3> lastPositions = new HashMap<>();
 
+    private static final float EAT_CHANCE = 0.25f;
+    private static final int FOOD_ROLL_COOLDOWN = 100; // reroll every 5 seconds
+    private int foodRollCooldown = 0;
+    private boolean currentlyWantsFood = false;
+
     public MegalosaurusEntity(EntityType<? extends Animal> pEntityType, Level pLevel) {
         super(pEntityType, pLevel);
         this.moveControl = new SlowTurnMoveControl(this, 10f);
+        this.setMaxUpStep(1.2f);
     }
 
     public static AttributeSupplier setAttributes() {
@@ -72,6 +80,8 @@ public class MegalosaurusEntity extends Animal implements GeoEntity {
 
         this.targetSelector.addGoal(1, new HurtByTargetGoal(this));
         this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, false, this::isAttackable));
+        this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, LivingEntity.class, false,
+                Predicates.and(this::isFood, (n) -> !this.isAsleep())));
     }
 
     @Override
@@ -123,15 +133,41 @@ public class MegalosaurusEntity extends Animal implements GeoEntity {
         return false;
     }
 
+    private boolean isFood(LivingEntity target) {
+        if (!(target instanceof Animal)) return false;
+
+        if (foodRollCooldown <= 0) {
+            currentlyWantsFood = this.random.nextFloat() < EAT_CHANCE;
+            foodRollCooldown = FOOD_ROLL_COOLDOWN;
+        }
+
+        return currentlyWantsFood;
+    }
+
     @Override
     protected void customServerAiStep() {
         super.customServerAiStep();
+
+        if (foodRollCooldown > 0) foodRollCooldown--;
 
         if (this.getTarget() != null) {
             if (this.distanceTo(this.getTarget()) > this.getAttributeValue(Attributes.FOLLOW_RANGE)) {
                 this.setTarget(null);
             }
         }
+    }
+
+    @Override
+    public boolean doHurtTarget(@NotNull Entity target) {
+        boolean success = super.doHurtTarget(target);
+
+        // if kills food
+        if (success && target instanceof LivingEntity livingTarget && livingTarget.isDeadOrDying()) {
+            currentlyWantsFood = false;
+            foodRollCooldown = FOOD_ROLL_COOLDOWN;
+        }
+
+        return success;
     }
 
     @Override
